@@ -1,4 +1,4 @@
-using JuMP, Ipopt
+using CSV, DataFrames, JuMP, Ipopt
 
 target_nutrients = [1800.0, 160.0, 100.0, 100.0]
 
@@ -11,10 +11,10 @@ struct Ingredient
 end
 
 # Ingredient x nutrient matrix
+df = CSV.read("ingredients.csv", DataFrame; comment="#")
 ingredients = [
-    Ingredient("chicken", 1.65, 0.31, 0.0, 0.03),
-    Ingredient("rice", 1.30, 0.025, 0.28, 0.01),
-    Ingredient("broccoli", 0.35, 0.028, 0.05, 0.002),
+    Ingredient(row.name, row.calories, row.protein, row.carbs, row.fats)
+    for row in eachrow(df)
 ]
 num_ingredients = length(ingredients)
 
@@ -39,8 +39,8 @@ x_opt = value.(decision)
 
 # print out results
 for i in 1:num_ingredients
-    ingredient_amount = x_opt[i]
-    EPSILON = 10
+    ingredient_amount = x_opt[i] * 100
+    EPSILON = 0.1
     if ingredient_amount > EPSILON
         name = ingredients[i].name
         rounded_amount = round(ingredient_amount, digits=1)
