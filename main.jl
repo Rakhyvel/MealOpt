@@ -1,25 +1,20 @@
-using NLsolve
+using JuMP, Ipopt
 
-# Example: 3 ingredients, 3 nutrients
-x0 = [100.0, 100.0, 100.0]  # initial guess
-
-# Ingredient × nutrient matrix
-A = [
+# Ingredient x nutrient matrix
+nutrients = [
     1.65 0.31 0.0;   # chicken
     1.3  0.025 0.28; # rice
     0.35 0.028 0.05  # broccoli
 ]
 
-# Target nutrients
-b = [2700.0, 160.0, 300.0]
+target_nutrients = [2700.0, 160.0, 300.0]
 
-# Residual function
-function residual!(F, x)
-    F[:] = (A * x .- b) ./ b
-end
+model = Model(Ipopt.Optimizer)
+@variable(model, 0 <= decision[1:3] <= 1000) # grams
 
-# Solve
-sol = nlsolve(residual!, x0; method = :newton)
+@objective(model, Min, sum(((nutrients * decision - target_nutrients) ./ target_nutrients).^2))
 
-println("Optimized ingredient amounts:")
-println(sol.zero)
+optimize!(model)
+
+x_opt = value.(decision)
+println(x_opt)
