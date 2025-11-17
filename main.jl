@@ -1,18 +1,37 @@
 using JuMP, Ipopt
 
+struct Ingredient
+    name::String
+    calories::Float64
+    protein::Float64
+    carbs::Float64
+    fat::Float64
+end
+
 # Ingredient x nutrient matrix
-nutrients = [
-    1.65 0.31 0.0;   # chicken
-    1.3  0.025 0.28; # rice
-    0.35 0.028 0.05  # broccoli
+ingredients = [
+    Ingredient("chicken", 1.65, 0.31, 0.0, 0.03),
+    Ingredient("rice", 1.30, 0.025, 0.28, 0.01),
+    Ingredient("broccoli", 0.35, 0.028, 0.05, 0.002),
 ]
 
-target_nutrients = [2700.0, 160.0, 300.0]
+num_ingredients = length(ingredients)
+
+A = zeros(Float64, 4, num_ingredients)
+
+for (j, ingr) in enumerate(ingredients)
+    A[1, j] = ingr.calories
+    A[2, j] = ingr.protein
+    A[3, j] = ingr.carbs
+    A[4, j] = ingr.fat
+end
+
+target_nutrients = [1800.0, 160.0, 100.0, 100.0]
 
 model = Model(Ipopt.Optimizer)
-@variable(model, 0 <= decision[1:3] <= 1000) # grams
+@variable(model, 0 <= decision[1:num_ingredients] <= 1000)
 
-@objective(model, Min, sum(((nutrients * decision - target_nutrients) ./ target_nutrients).^2))
+@objective(model, Min, sum(((A * decision - target_nutrients) ./ target_nutrients).^2))
 
 optimize!(model)
 
